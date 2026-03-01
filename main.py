@@ -1,8 +1,7 @@
 import pygame
 from core.field import GameField
 from core.draw_utils import draw_cell
-from config import CELLS_R, WIDTH, HEIGHT, BG_COLOR, FONT_FACE, FONT_SIZE, HELP_TEXT_COLOR, HELP_FONT_SIZE
-
+from config import CELLS_R, WIDTH, HEIGHT, BG_COLOR, FONT_FACE, HELP_TEXT_COLOR, HELP_FONT_SIZE, SCORE_FONT_SIZE, SCORE_TEXT_COLOR
 pygame.init()
 window_size = (WIDTH, HEIGHT)
 pygame.display.set_caption("2048 hexagon")
@@ -38,17 +37,21 @@ while running:
 
     font = pygame.font.Font(FONT_FACE, HELP_FONT_SIZE)
     text = font.render("Keys:", True, HELP_TEXT_COLOR)
-    screen.blit(text, (WIDTH - 150, 30))
+    screen.blit(text, (WIDTH - 150, 80))
 
     ac_keys = ["U: Up right", "J: Right", "N: Down right", "B: Down left", "G: Left", "Y: Up Left", "Q: Quit"]
 
     for i in range(0, len(ac_keys)):
         text = font.render(ac_keys[i], True, HELP_TEXT_COLOR)
-        screen.blit(text, (WIDTH - 150, 60 + i * 20))
+        screen.blit(text, (WIDTH - 150, 110 + i * 20))
 
     if field.prev_state is not None:
         text = font.render("Z: Undo last move", True, HELP_TEXT_COLOR)
         screen.blit(text, (WIDTH - 150, HEIGHT - 200))
+
+    font = pygame.font.Font(FONT_FACE, SCORE_FONT_SIZE)
+    text = font.render(f"Score: {field.score}", True, SCORE_TEXT_COLOR)
+    screen.blit(text, (WIDTH - 225, 20))
 
     for index in field.cells.keys():
         draw_cell(screen, index[0], index[1], field.cells[index]['value'])

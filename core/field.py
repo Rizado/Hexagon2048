@@ -1,5 +1,6 @@
 from random import choice
 from copy import deepcopy
+from math import log2
 
 import pygame
 
@@ -19,7 +20,9 @@ class GameField:
         self.radius = radius
         self.cells = {}
         self.prev_state = None
+        self.prev_score = 0
         self.surface = surface
+        self.score = 0
 
         for x in range(-radius, radius + 1):
             for y in range(-radius, radius + 1):
@@ -72,6 +75,8 @@ class GameField:
     def global_move(self, direction):
         # Сохраняем состояние для возможной отмены хода во временную переменную
         tmp_state = deepcopy(self.cells)
+        tmp_score = self.score
+        merged = set()
         cfg = self.MOVE_CONFIG[direction]
         dx, dy, dz = cfg['vec']
         axis1, axis2 = cfg['axes']
@@ -105,6 +110,8 @@ class GameField:
 
                     if self.can_move(x, y, z, direction):
                         tx, ty, tz = x + dx, y + dy, z + dz
+                        if self.cells[(tx, ty, tz)]['value'] == self.cells[(x, y, z)]['value']:
+                            merged.add(self.cells[(tx, ty, tz)]['value'] + self.cells[(x, y, z)]['value'])
                         self.cells[(tx, ty, tz)]['value'] += self.cells[(x, y, z)]['value']
                         self.cells[(x, y, z)]['value'] = 0
                         moved = True
@@ -121,7 +128,13 @@ class GameField:
         if cycle > 1:
             self.spawn_tile()
             self.prev_state = deepcopy(tmp_state)
+            self.prev_score = tmp_score
+            self.score += 1
+            for n in merged:
+                self.score += int(log2(n))
+
         tmp_state = None
+        tmp_score = 0
 
         return True
 
@@ -138,6 +151,10 @@ class GameField:
 
     def undo_last_move(self):
         if self.prev_state is not None:
+            # Восстанавливаем состояние игры и счёт
             self.cells = deepcopy(self.prev_state)
+            self.score = self.prev_score
+            # Обнуляем предыдущее состояние, отмена теперь не имеет смысла
             self.prev_state = None
+            self.prev_score = 0
         return True
