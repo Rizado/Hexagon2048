@@ -45,9 +45,15 @@ while running:
         text = font.render(ac_keys[i], True, HELP_TEXT_COLOR)
         screen.blit(text, (WIDTH - 150, 110 + i * 20))
 
-    if field.prev_state is not None:
+    if field.prev_state is not None and (field.free_undos > 0 or field.prev_score >= 50):
         text = font.render("Z: Undo last move", True, HELP_TEXT_COLOR)
         screen.blit(text, (WIDTH - 150, HEIGHT - 200))
+        if field.free_undos > 0:
+            cnt = f"(free: {field.free_undos})"
+        else:
+            cnt = "(-50 pts)"
+        text = font.render(cnt, True, HELP_TEXT_COLOR)
+        screen.blit(text, (WIDTH - 150, HEIGHT - 180))
 
     font = pygame.font.Font(FONT_FACE, SCORE_FONT_SIZE)
     text = font.render(f"Score: {field.score}", True, SCORE_TEXT_COLOR)

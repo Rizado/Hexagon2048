@@ -1,8 +1,9 @@
 from random import choice
 from copy import deepcopy
 from math import log2
-
 import pygame
+from config import FREE_UNDOS, CELLS_R
+
 
 from .draw_utils import draw_cell
 
@@ -16,13 +17,14 @@ class GameField:
         'nw': {'vec': (1, 0, 1), 'axes': ('y', 'z'), 'reverse': True},
     }
 
-    def __init__(self, radius = 3, surface = None):
+    def __init__(self, radius = CELLS_R, surface = None):
         self.radius = radius
         self.cells = {}
         self.prev_state = None
         self.prev_score = 0
         self.surface = surface
         self.score = 0
+        self.free_undos = FREE_UNDOS
 
         for x in range(-radius, radius + 1):
             for y in range(-radius, radius + 1):
@@ -151,6 +153,15 @@ class GameField:
 
     def undo_last_move(self):
         if self.prev_state is not None:
+            # Есть "бесплатные" отмены
+            if self.free_undos > 0:
+                self.free_undos -= 1
+            # Счёт достаточный для отмены
+            elif self.prev_score >= 50:
+                self.prev_score -= 50
+            # Иначе просто выходим
+            else:
+                return False
             # Восстанавливаем состояние игры и счёт
             self.cells = deepcopy(self.prev_state)
             self.score = self.prev_score
