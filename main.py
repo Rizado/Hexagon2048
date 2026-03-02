@@ -58,6 +58,8 @@ while running:
     font = pygame.font.Font(FONT_FACE, SCORE_FONT_SIZE)
     text = font.render(f"Score: {field.score}", True, SCORE_TEXT_COLOR)
     screen.blit(text, (WIDTH - 225, 20))
+    text = font.render(f"Moves: {field.moves}", True, SCORE_TEXT_COLOR)
+    screen.blit(text, (WIDTH - 225, 45))
 
     for index in field.cells.keys():
         draw_cell(screen, index[0], index[1], field.cells[index]['value'])

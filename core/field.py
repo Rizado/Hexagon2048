@@ -2,7 +2,7 @@ from random import choice
 from copy import deepcopy
 from math import log2
 import pygame
-from config import FREE_UNDOS, CELLS_R
+from config import FREE_UNDOS, CELLS_R, ANIM_DELAY
 
 
 from .draw_utils import draw_cell
@@ -25,6 +25,7 @@ class GameField:
         self.surface = surface
         self.score = 0
         self.free_undos = FREE_UNDOS
+        self.moves = 0
 
         for x in range(-radius, radius + 1):
             for y in range(-radius, radius + 1):
@@ -122,7 +123,7 @@ class GameField:
                 for index in self.cells.keys():
                     draw_cell(self.surface, index[0], index[1], self.cells[index]['value'])
                 pygame.display.flip()
-                pygame.time.wait(500)
+                pygame.time.wait(max(100, min(int(ANIM_DELAY), 1000)))
 
         # Если первый проход по массиву "пустой" (ничего не перемещалось), cycle будет равно 1, иначе больше.
         # Создаём новое значение только в том случае, если было перемещение хоть одной цифры
@@ -134,6 +135,7 @@ class GameField:
             self.score += 1
             for n in merged:
                 self.score += int(log2(n))
+            self.moves += 1
 
         tmp_state = None
         tmp_score = 0
@@ -165,6 +167,7 @@ class GameField:
             # Восстанавливаем состояние игры и счёт
             self.cells = deepcopy(self.prev_state)
             self.score = self.prev_score
+            self.moves -= 1
             # Обнуляем предыдущее состояние, отмена теперь не имеет смысла
             self.prev_state = None
             self.prev_score = 0
