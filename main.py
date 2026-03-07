@@ -2,6 +2,8 @@ import pygame
 from core.field import GameField
 from core.draw_utils import draw_cell
 from config import CELLS_R, WIDTH, HEIGHT, BG_COLOR, FONT_FACE, HELP_TEXT_COLOR, HELP_FONT_SIZE, SCORE_FONT_SIZE, SCORE_TEXT_COLOR
+
+
 pygame.init()
 window_size = (WIDTH, HEIGHT)
 pygame.display.set_caption("2048 hexagon")
@@ -28,6 +30,10 @@ while running:
                 field.global_move("w")
             elif event.key == pygame.K_y:
                 field.global_move("nw")
+            elif event.key == pygame.K_o:
+                field.open_from_file()
+            elif event.key == pygame.K_s:
+                field.save_to_file()
             elif event.key == pygame.K_q:
                 running = False
             elif event.key == pygame.K_z:
@@ -39,7 +45,7 @@ while running:
     text = font.render("Keys:", True, HELP_TEXT_COLOR)
     screen.blit(text, (WIDTH - 150, 80))
 
-    ac_keys = ["U: Up right", "J: Right", "N: Down right", "B: Down left", "G: Left", "Y: Up Left", "Q: Quit"]
+    ac_keys = ["U: Up right", "J: Right", "N: Down right", "B: Down left", "G: Left", "Y: Up Left", "S: Save game", "O: Open saved game", "Q: Quit"]
 
     for i in range(0, len(ac_keys)):
         text = font.render(ac_keys[i], True, HELP_TEXT_COLOR)

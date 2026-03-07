@@ -3,6 +3,8 @@ from copy import deepcopy
 from math import log2
 import pygame
 from config import FREE_UNDOS, CELLS_R, ANIM_DELAY
+from tkinter import filedialog as fd
+from tkinter.messagebox import showerror
 
 
 from .draw_utils import draw_cell
@@ -18,6 +20,8 @@ class GameField:
     }
 
     def __init__(self, radius = CELLS_R, surface = None):
+        # Защита от слишком больших и слишком маленьких значений
+        radius = max(2, min(radius, 8))
         self.radius = radius
         self.cells = {}
         self.prev_state = None
@@ -37,6 +41,19 @@ class GameField:
                     }
         for i in range(1, 5):
             self.spawn_tile()
+
+    def __int_to_bytes(self, value):
+        buf = bytearray(4)
+        for i in range(len(buf)):
+            buf[i] = value % 256
+            value //= 256
+        return buf
+
+    def __bytes_to_int(self, buf):
+        result = 0
+        for i in range(len(buf)):
+            result += buf[i] * 256 ** i
+        return result
 
     def can_move(self, x, y, z, direction):
         if direction not in self.MOVE_CONFIG:
@@ -172,3 +189,92 @@ class GameField:
             self.prev_state = None
             self.prev_score = 0
         return True
+
+    def save_to_file(self):
+        arr_len = len(self.cells) * 3 + 14
+        ba = bytearray(arr_len)
+        ba[0:4] = bytes('2048', 'utf-8')
+        ba[4] = self.radius
+        cnt = 0
+        for coords, item in self.cells.items():
+            ba[cnt * 3 + 5] = (coords[0] + 256) % 256
+            ba[cnt * 3 + 6] = (coords[1] + 256) % 256
+            ba[cnt * 3 + 7] = 255 if item['blocked'] else int(log2(item['value'])) if item['value'] > 0 else 0
+            cnt += 1
+        ba[-9] = self.free_undos
+        ba[-8:-4] = self.__int_to_bytes(self.score)
+        ba[-4:] = self.__int_to_bytes(self.moves)
+        for i in range(5, len(ba)):
+            ba[i] = ba[i] ^ ((i + 75) % 256)
+        gamefile = fd.asksaveasfilename(
+            defaultextension='.2048',
+            filetypes=[('Hexagon 2048', '.2048'), ('All files', '*')],
+            title='Save Game Field as...',
+        )
+
+        if gamefile is not None:
+            try:
+                with open(gamefile, 'wb') as f:
+                    f.write(ba)
+            except Exception as e:
+                print(f"Error saving file: {e}")
+
+    def open_from_file(self):
+        gamefile = fd.askopenfilename(
+            defaultextension='.2048',
+            filetypes=[('Hexagon 2048', '.2048'), ('All files', '*')],
+            title='Open Game Field...',
+        )
+
+        if gamefile is not None:
+            try:
+                with open(gamefile, 'rb') as f:
+                    ba = bytearray(f.read())
+                    for i in range(5, len(ba)):
+                        ba[i] = ba[i] ^ ((i + 75) % 256)
+                    corrupted = False
+                    # Header
+                    if ba[:4].decode('utf-8') != '2048':
+                        corrupted = True
+                    # File size
+                    cells_count = 3 * (ba[4] ** 2 + ba[4]) + 1
+                    if cells_count * 3 + 14 != len(ba):
+                        corrupted = True
+                    # Free undos
+                    if ba[-9] > FREE_UNDOS:
+                        corrupted = True
+                    # Coordinates
+                    for i in range(cells_count):
+                        x = ba[i * 3 + 5]
+                        if x > 127:
+                            x -= 256
+                        y = ba[i * 3 + 6]
+                        if y > 127:
+                            y -= 256
+                        z = x - y
+                        if max(abs(x), abs(y), abs(z)) > ba[4]:
+                            corrupted = True
+
+                    if corrupted:
+                        showerror('Corrupted File', 'Game file is corrupted. Cannot load it.')
+                    else:
+                        self.cells = {}
+                        self.score = self.__bytes_to_int(ba[-8:-4])
+                        self.moves = self.__bytes_to_int(ba[-4:])
+                        self.free_undos = ba[-9]
+                        for i in range(cells_count):
+                            x = ba[i * 3 + 5]
+                            if x > 127:
+                                x -= 256
+                            y = ba[i * 3 + 6]
+                            if y > 127:
+                                y -= 256
+                            z = x - y
+                            self.cells[(x, y, z)] = {'value': 0, 'blocked': False}
+                            if ba[i * 3 + 7] == 255:
+                                self.cells[(x, y, z)]['blocked'] = True
+                            elif ba[i * 3 + 7] > 0:
+                                self.cells[(x, y, z)]['value'] = 2 ** ba[i * 3 + 7]
+
+            except Exception as e:
+                print(f"Error opening file: {e}")
